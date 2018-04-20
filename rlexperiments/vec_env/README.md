@@ -1,0 +1,1 @@
+The classes in this package are mostly copied from [OpenAI Baselines](https://github.com/openai/baselines/tree/master/baselines/common/vec_env).

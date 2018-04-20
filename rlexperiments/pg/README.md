@@ -1,0 +1,2 @@
+
+This is a port from Andrej Karpathy blog post [Deep Reinforcement Learning: Pong from Pixels](http://karpathy.github.io/2016/05/31/rl/) to TensorFlow. The original source is available as [Gist](https://gist.github.com/karpathy/a4166c7fe253700972fcbc77e4ea32c5).
