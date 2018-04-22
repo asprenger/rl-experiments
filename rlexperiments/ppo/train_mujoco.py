@@ -14,6 +14,9 @@ from rlexperiments.common.util import ensure_dir
 
 def train(env_id, num_timesteps, seed, cuda_visible_devices, gpu_memory_fraction, output_dir):
 
+    if env_id.startswith('Roboschool'):
+        import roboschool
+
     def make_env():
         return gym.make(env_id)
     env = DummyVecEnv([make_env])

@@ -12,6 +12,9 @@ from rlexperiments.vec_env.episode_monitor import EpisodeMonitor
 
 def run(env_id, model_path):
 
+    if env_id.startswith('Roboschool'):
+        import roboschool
+
     real_env = gym.make(env_id)
 
     def make_env():
