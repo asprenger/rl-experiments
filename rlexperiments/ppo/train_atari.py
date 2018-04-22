@@ -1,8 +1,9 @@
 
 import argparse
 import tensorflow as tf
+from gym.wrappers.monitor import Monitor
 from rlexperiments.common.atari_utils import make_atari, wrap_deepmind
-from rlexperiments.common.tf_util import create_session
+from rlexperiments.common.tf_util import create_session, ensure_dir
 from rlexperiments.vec_env.subproc_vec_env import SubprocVecEnv
 from rlexperiments.vec_env.vec_frame_stack import VecFrameStack
 from rlexperiments.vec_env.episode_monitor import EpisodeMonitor
