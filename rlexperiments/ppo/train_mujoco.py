@@ -2,6 +2,7 @@
 import argparse
 import os
 import gym
+from gym.wrappers.monitor import Monitor
 import tensorflow as tf
 from rlexperiments.ppo import ppo
 from rlexperiments.ppo.policies import MlpPolicy
@@ -12,13 +13,18 @@ from rlexperiments.common.tf_util import create_session
 from rlexperiments.common.util import ensure_dir
 
 
-def train(env_id, num_timesteps, seed, cuda_visible_devices, gpu_memory_fraction, output_dir):
-
+def train(env_id, num_timesteps, seed, cuda_visible_devices, gpu_memory_fraction, output_dir, record_video, record_video_freq = 100):
     if env_id.startswith('Roboschool'):
         import roboschool
-
     def make_env():
-        return gym.make(env_id)
+        env = gym.make(env_id)
+        if record_video:
+            video_path = os.path.join(output_dir, 'video')
+            ensure_dir(video_path)
+            env = Monitor(env, video_path, video_callable=lambda episode_id: episode_id % record_video_freq == 0, force=True)
+        return env    
+
+
     env = DummyVecEnv([make_env])
     episode_monitor = EpisodeMonitor(env)
     vec_normalize = VecNormalize(episode_monitor)
@@ -47,7 +53,7 @@ def main():
     parser.add_argument('--output-dir', help='base directory to store models and summaries', default='/tmp/train/ppo')
     args = parser.parse_args()
     train(args.env, num_timesteps=args.num_timesteps, seed=0, cuda_visible_devices=args.cuda_visible_devices, 
-        gpu_memory_fraction=args.gpu_memory_fraction, output_dir=args.output_dir)
+        gpu_memory_fraction=args.gpu_memory_fraction, output_dir=args.output_dir, record_video=True, record_video_freq=2)
 
 
 if __name__ == '__main__':
