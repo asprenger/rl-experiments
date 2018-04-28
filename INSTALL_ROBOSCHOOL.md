@@ -81,6 +81,11 @@ Try run one of the examples:
     python agent_zoo/RoboschoolHopper_v0_2017may.py
 
 
+Also I need to remove the asserts in:
+
+ * roboschool/roboschool/cpp-household/render-glwidget.cpp
+ * roboschool/roboschool/cpp-household/render-simple.cpp
+
 ## Some notes
 
 Find out where pkg-config looks for .pc files:
