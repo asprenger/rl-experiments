@@ -7,20 +7,29 @@ Install Ronoschool in a conda environment with Python 3.
 
 ### Create conda environment
 
+Check your current conda environments:
+
+    conda info --envs
+
+Delete existing 'roboschool' environment if neccessary:
+
+    conda env remove -n roboschool
+
+Create conda environment 'roboschool' and activate it:
+
     conda create -n roboschool python=3.5.2
     source activate roboschool
 
-TODO check if we need to run in Python 3.5.2, the reason was to avoid [ROBOSCHOOL-79](https://github.com/openai/roboschool/issues/79)
+The environment is created with Python 3.5.2, to avoid the problems described in [ROBOSCHOOL-79](https://github.com/openai/roboschool/issues/79)
 
     
 ### Install gym
 
-    brew install cmake boost boost-python sdl2 swig wget
-    git clone https://github.com/openai/gym 
-    cd gym 
-    pip install -e .
+    pip install gym
 
-TODO check if we need to install from source or could just use the package
+If the gym installation should support Atari games install the following package:
+
+    pip install gym[atari]
 
 
 ### Prepare Roboschool
@@ -32,6 +41,8 @@ TODO check if we need to install from source or could just use the package
 
 ### Compile and install bullet
 
+It is important to clone Bullet inside the Roboschool directory.
+
     git clone https://github.com/olegklimov/bullet3 -b roboschool_self_collision 
     cd bullet3 
     mkdir build 
@@ -41,50 +52,60 @@ TODO check if we need to install from source or could just use the package
     make install 
     cd ../..
 
+When these steps have been executed successfully the Bullet libraries and include files are located in $ROBOSCHOOL_PATH/roboschool/cpp-household/bullet_local_install.
+
 ### Install Roboschool
 
+Install Roboschool dependencies:
+
     brew install cmake tinyxml assimp ffmpeg 
-    brew install boost-python --without-python --with-python3 --build-from-source 
+    brew install boost-python3 --without-python --build-from-source
     brew install qt
 
-NOTE: on Xing notebook this does not work, use instead:
-
-    brew install boost-python3 --without-python --build-from-source
-
-Set the pkg-config path
+Set the pkg-config path:
 
     export PKG_CONFIG_PATH=$(dirname $(dirname $(which python)))/lib/pkgconfig
+    export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/opt/qt/lib/pkgconfig
 
-Now the pkg-config --cflags python-3.5 should show you the local python include directory. 
-Also pkg-config --cflags Qt5Widgets Qt5OpenGL should show the homebrew installation paths of Qt.
+Now 'pkg-config --cflags python-3.5' should show you the local python include directory. 
+Also 'pkg-config --cflags Qt5Widgets Qt5OpenGL' should show the installation paths of Qt.
 
-TODO: add /usr/local/opt/qt/lib/pkgconfig to PKG_CONFIG_PATH, WHY???
-
+Build and install Roboschool:
 
     pip install -e .
 
-The installation failed because boost_python3 could not be found. I had to fix the Makefile like this:
+On my machine this failed because boost_python3 could not be found. To fix this I had to patch the Makefile:
 
     ifeq ($(PYTHON),2.7)
         BOOST_PYTHON = -lboost_python
     else
-        #BOOST_PYTHON = -lboost_python$(BOOST_PYTHON3_POSTFIX)
+        #BOOST_PYTHON = -lboost_python$(BOOST_PYTHON3_POSTFIX) 
         BOOST_PYTHON = -L/usr/local/Cellar/boost-python3/1.67.0/lib -lboost_python36
     endif
+
+After this patch the Roboschool installation worked.
 
 Verify that installation is working:
 
     python -c "import roboschool"
 
+Here nothing spectacular happens, it should just not raise any Python erros or segmentation fauls.
+
 Try run one of the examples:
 
     python agent_zoo/RoboschoolHopper_v0_2017may.py
 
-
-Also I need to remove the asserts in:
+Unfortunately this failed assertions on my installation. To fix this I had to remove (!) the assertion 'CHECK_GL_ERROR;'
+from the following source files:
 
  * roboschool/roboschool/cpp-household/render-glwidget.cpp
  * roboschool/roboschool/cpp-household/render-simple.cpp
+
+After that uninstall Roboschool and install it again:
+
+    pip uninstall roboschool
+    pip install -e .
+
 
 ## Some notes
 
