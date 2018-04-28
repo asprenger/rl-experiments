@@ -6,7 +6,7 @@ Run the algorithm on an Atari game:
 
     python -u -m rlexperiments.ppo.train_atari --env PongNoFrameskip-v4
 
-Run the algorithm on a Mujoco environment:
+Run the algorithm on a Mujoco or Roboschool environment:
 
     python -u -m rlexperiments.ppo.train_mujoco --env Hopper-v2
 
