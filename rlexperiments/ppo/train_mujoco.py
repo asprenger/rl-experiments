@@ -46,14 +46,17 @@ def train(env_id, num_timesteps, seed, cuda_visible_devices, gpu_memory_fraction
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env', help='environment ID', default='Hopper-v2')
+    parser.add_argument('--env', help='environment ID', default='RoboschoolHopper-v1')
     parser.add_argument('--num-timesteps', help='number of timesteps', type=int, default=int(50e6))
     parser.add_argument('--cuda-visible-devices', help='comma separated list of GPU IDs used by CUDA', default='0')
     parser.add_argument('--gpu-memory-fraction', help='fraction of GPU memory used', type=float, default=0.5)
     parser.add_argument('--output-dir', help='base directory to store models and summaries', default='/tmp/train/ppo')
+    parser.add_argument('--video', help='enable video recording', action='store_true')
+
+
     args = parser.parse_args()
     train(args.env, num_timesteps=args.num_timesteps, seed=0, cuda_visible_devices=args.cuda_visible_devices, 
-        gpu_memory_fraction=args.gpu_memory_fraction, output_dir=args.output_dir, record_video=True, record_video_freq=2)
+        gpu_memory_fraction=args.gpu_memory_fraction, output_dir=args.output_dir, record_video=args.video)
 
 
 if __name__ == '__main__':
