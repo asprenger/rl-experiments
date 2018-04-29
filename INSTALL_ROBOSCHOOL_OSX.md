@@ -1,9 +1,11 @@
 
-# Roboschool
+# Install Roboschool on OSX
 
-## Install Roboschool on OS X 10.11.6
+This are some instructions how to install Roboschool in a conda environment with Python 3 on OSX 10.11.6. 
+The installation on OSX turned out to be difficult and only worked for me after patching the makefile and 
+doing modifications to the source code.
 
-Install Ronoschool in a conda environment with Python 3.
+## Installation
 
 ### Create conda environment
 
@@ -67,14 +69,15 @@ Set the pkg-config path:
     export PKG_CONFIG_PATH=$(dirname $(dirname $(which python)))/lib/pkgconfig
     export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/opt/qt/lib/pkgconfig
 
-Now 'pkg-config --cflags python-3.5' should show you the local python include directory. 
-Also 'pkg-config --cflags Qt5Widgets Qt5OpenGL' should show the installation paths of Qt.
+Check that 'pkg-config --cflags python-3.5' shows the local python include directory. 
+Check that 'pkg-config --cflags Qt5Widgets Qt5OpenGL' shows the installation paths of Qt.
 
 Build and install Roboschool:
 
     pip install -e .
 
-On my machine this failed because boost_python3 could not be found. To fix this I had to patch the Makefile:
+On my machine this failed because boost_python3 could not be found. To fix this I had to patch the lib location and name 
+in the Makefile:
 
     ifeq ($(PYTHON),2.7)
         BOOST_PYTHON = -lboost_python
@@ -83,13 +86,13 @@ On my machine this failed because boost_python3 could not be found. To fix this 
         BOOST_PYTHON = -L/usr/local/Cellar/boost-python3/1.67.0/lib -lboost_python36
     endif
 
-After this patch the Roboschool installation worked.
+After this patch Roboschool could be build and installed.
 
 Verify that installation is working:
 
     python -c "import roboschool"
 
-Here nothing spectacular happens, it should just not raise any Python erros or segmentation fauls.
+Nothing spectacular happens here, it should just not raise any Python errors or segmentation faults.
 
 Try run one of the examples:
 
@@ -107,7 +110,7 @@ After that uninstall Roboschool and install it again:
     pip install -e .
 
 
-## Some notes
+## Some random notes
 
 Find out where pkg-config looks for .pc files:
 
@@ -126,5 +129,3 @@ brew has an 'info' command that shows where lib and .pc files for packages are l
         CPPFLAGS: -I/usr/local/opt/qt/include
     For pkg-config to find this software you may need to set:
         PKG_CONFIG_PATH: /usr/local/opt/qt/lib/pkgconfig
-
-
