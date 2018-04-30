@@ -14,8 +14,10 @@ from rlexperiments.vec_env.episode_monitor import EpisodeMonitor
 import pyglet, pyglet.window as pw, pyglet.window.key as pwk
 from pyglet import gl
 
+
+
 class PygletInteractiveWindow(pw.Window):
-    def __init__(self, env):
+    def __init__(self):
         pw.Window.__init__(self, width=600, height=400, vsync=False, resizable=True)
         self.theta = 0
         self.still_open = True
@@ -47,15 +49,16 @@ class PygletInteractiveWindow(pw.Window):
         texture.blit(0, 0, width=self.win_w, height=self.win_h)
         self.flip()
 
-    def on_key_press(self, key, modifiers):
-        self.keys[key] = +1
-        if key==pwk.ESCAPE: self.still_open = False
 
-    def on_key_release(self, key, modifiers):
-        self.keys[key] = 0
+#    def on_key_press(self, key, modifiers):
+#        self.keys[key] = +1
+#        if key==pwk.ESCAPE: self.still_open = False
 
-    def each_frame(self):
-        self.theta += 0.05 * (self.keys.get(pwk.LEFT, 0) - self.keys.get(pwk.RIGHT, 0))
+#    def on_key_release(self, key, modifiers):
+#        self.keys[key] = 0
+
+#    def each_frame(self):
+#        self.theta += 0.05 * (self.keys.get(pwk.LEFT, 0) - self.keys.get(pwk.RIGHT, 0))
 
 def last_vec_norm_file(model_path):
     if not os.path.exists(model_path):
@@ -87,10 +90,11 @@ def run(env_id, model_path):
     ob_space = env.observation_space
     ac_space = env.action_space
 
-    control_me = PygletInteractiveWindow(real_env.unwrapped)
+    control_me = PygletInteractiveWindow()
 
     obs = env.reset()    
 
+    epoch = 1
     steps = 0
     total_reward = 0
 
@@ -112,18 +116,14 @@ def run(env_id, model_path):
             #print(env.unwrapped.spec.id)
             #print(real_env) # TimeLimit
             #print(real_env.unwrapped) # RoboschoolHopper
-            print(real_env.unwrapped.body_xyz)
+            #print(real_env.unwrapped.body_xyz)
     
-
-
-
             actions, values, _ = policy.step(obs)
-
 
             img = real_env.render("rgb_array")
 
             control_me.imshow(img)
-            control_me.each_frame()
+
             if control_me.still_open==False: 
                 print('it ends here!!!')
                 break
@@ -135,11 +135,19 @@ def run(env_id, model_path):
             total_reward += rewards
             print('%d: reward=%f value=%f' % (steps, total_reward, value))
             if dones:
+
                 print('ep_reward=%f ep_length=%f' % (episode_monitor.mean_episode_reward(), episode_monitor.mean_episode_length()))
                 print('DONE')
+                epoch += 1
                 steps = 0
                 total_reward = 0
+                
+
+                control_me.close()
+                control_me = PygletInteractiveWindow()
+
                 obs = env.reset()
+
                 time.sleep(2)
 
 def main():
