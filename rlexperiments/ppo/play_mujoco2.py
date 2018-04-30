@@ -4,19 +4,18 @@ import os
 import argparse
 from random import randint
 import numpy as np
+import pyglet, pyglet.window as pw, pyglet.window.key as pwk
+from pyglet import gl
 import gym
+from gym.wrappers.monitoring.video_recorder import VideoRecorder
 import tensorflow as tf
+from rlexperiments.common.util import ts_rand
 from rlexperiments.ppo.policies import MlpPolicy
 from rlexperiments.vec_env.dummy_vec_env import DummyVecEnv
 from rlexperiments.vec_env.vec_normalize import VecNormalize
 from rlexperiments.vec_env.episode_monitor import EpisodeMonitor
 
-import pyglet, pyglet.window as pw, pyglet.window.key as pwk
-from pyglet import gl
-
-
-
-class PygletInteractiveWindow(pw.Window):
+class PygletWindow(pw.Window):
     def __init__(self):
         pw.Window.__init__(self, width=600, height=400, vsync=False, resizable=True)
         self.theta = 0
@@ -50,17 +49,7 @@ class PygletInteractiveWindow(pw.Window):
         self.flip()
 
 
-#    def on_key_press(self, key, modifiers):
-#        self.keys[key] = +1
-#        if key==pwk.ESCAPE: self.still_open = False
-
-#    def on_key_release(self, key, modifiers):
-#        self.keys[key] = 0
-
-#    def each_frame(self):
-#        self.theta += 0.05 * (self.keys.get(pwk.LEFT, 0) - self.keys.get(pwk.RIGHT, 0))
-
-def last_vec_norm_file(model_path):
+def last_vec_norm_path(model_path):
     if not os.path.exists(model_path):
         return None
     files = os.listdir(model_path)
@@ -73,28 +62,33 @@ def last_vec_norm_file(model_path):
     return os.path.join(model_path, files[last_epoch_idx])
 
 
-def run(env_id, model_path):
+def ep_video_path(video_path, ts, env_id, epoch):
+    return os.path.join(video_path, '%s-%s-%d.mp4' % (ts, env_id, epoch))
+
+def run(env_id, model_path, video_path=None):
 
     if env_id.startswith('Roboschool'):
         import roboschool
 
-    real_env = gym.make(env_id)
+    record_video = video_path != None
+
+    gym_env = gym.make(env_id)
 
     def make_env():
-        return real_env
-    env = DummyVecEnv([make_env])
-    episode_monitor = EpisodeMonitor(env)
-    vec_normalize = VecNormalize(episode_monitor)
-    env = vec_normalize
+        return gym_env
+    dummy_venv = DummyVecEnv([make_env])
+    ep_monitor = EpisodeMonitor(dummy_venv)
+    vec_normalize = VecNormalize(ep_monitor)
+    venv = vec_normalize
 
-    ob_space = env.observation_space
-    ac_space = env.action_space
+    ob_space = venv.observation_space
+    ac_space = venv.action_space
 
-    control_me = PygletInteractiveWindow()
+    window = PygletWindow()
 
-    obs = env.reset()    
+    obs = venv.reset()    
 
-    epoch = 1
+    ep = 1
     steps = 0
     total_reward = 0
 
@@ -107,55 +101,50 @@ def run(env_id, model_path):
         ckpt = tf.train.get_checkpoint_state(model_path)
         saver.restore(sess, ckpt.model_checkpoint_path)
 
-        vec_norm_state = last_vec_norm_file(model_path)
-        print('Loading VecNormalize state %s' % vec_norm_state)
-        vec_normalize.restore(vec_norm_state)
+        vec_norm_path = last_vec_norm_path(model_path)
+        print('Loading VecNormalize state %s' % vec_norm_path)
+        vec_normalize.restore(vec_norm_path)
 
-        while True:
+        ts = ts_rand()
+        video_recorder = VideoRecorder(gym_env, path=ep_video_path(video_path, ts, env_id, ep), enabled=record_video)
 
-            #print(env.unwrapped.spec.id)
-            #print(real_env) # TimeLimit
-            #print(real_env.unwrapped) # RoboschoolHopper
-            #print(real_env.unwrapped.body_xyz)
-    
+        while True:    
             actions, values, _ = policy.step(obs)
+            img = gym_env.render("rgb_array")
+            window.imshow(img)
+            video_recorder.capture_frame()
 
-            img = real_env.render("rgb_array")
-
-            control_me.imshow(img)
-
-            if control_me.still_open==False: 
-                print('it ends here!!!')
+            if window.still_open==False:
+                video_records.close()
                 break
-
 
             value = values[0]
             steps += 1
-            obs, rewards, dones, info = env.step(actions)
+            obs, rewards, dones, info = venv.step(actions)
             total_reward += rewards
             print('%d: reward=%f value=%f' % (steps, total_reward, value))
             if dones:
-
-                print('ep_reward=%f ep_length=%f' % (episode_monitor.mean_episode_reward(), episode_monitor.mean_episode_length()))
-                print('DONE')
-                epoch += 1
+                print('ep_reward=%f ep_length=%f\nDONE' % (ep_monitor.mean_episode_reward(), ep_monitor.mean_episode_length()))
+                ep += 1
                 steps = 0
                 total_reward = 0
-                
+        
+                #window.close()
+                #window = PygletWindow()
 
-                control_me.close()
-                control_me = PygletInteractiveWindow()
-
-                obs = env.reset()
-
+                video_recorder.close()
+                video_recorder = VideoRecorder(gym_env, path=ep_video_path(video_path, ts, env_id, ep), enabled=record_video)
+                obs = venv.reset()
                 time.sleep(2)
+                
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env', help='environment ID', default='Hopper-v2')
-    parser.add_argument('--model-path', help='model path')
+    parser.add_argument('--env', help='Gym environment ID', default='Hopper-v2')
+    parser.add_argument('--model-path', help='TensorFlow model path')
+    parser.add_argument('--video-path', help='video path')
     args = parser.parse_args()
-    run(args.env, args.model_path)
+    run(args.env, args.model_path, args.video_path)
 
 if __name__ == "__main__":
     main()

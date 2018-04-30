@@ -1,7 +1,7 @@
 import os
 import argparse
 from random import randint
-from rlexperiments.common.util import tmp_dir_name
+from rlexperiments.common.util import ts_rand
 from rlexperiments.common.atari_utils import make_atari, wrap_deepmind
 from rlexperiments.vec_env.subproc_vec_env import SubprocVecEnv
 from rlexperiments.vec_env.vec_frame_stack import VecFrameStack
@@ -26,7 +26,7 @@ def make_atari_env(env_id, num_env, seed, output_dir, record_video, record_video
 
 def run(env_id, num_env=8, total_timesteps=int(50e6), base_dir='/tmp/train/a2c', record_video=False, 
         cuda_visible_devices='0', gpu_memory_fraction=0.5, load_model=False):
-    output_dir = os.path.join(base_dir, tmp_dir_name())
+    output_dir = os.path.join(base_dir, ts_rand())
     print('Output dir: %s' % output_dir)
     env = make_atari_env(env_id, num_env, seed = randint(0, 1000000), output_dir=output_dir, record_video=record_video)
     # Do frame-stacking here instead of the FrameStack wrapper to reduce IPC overhead

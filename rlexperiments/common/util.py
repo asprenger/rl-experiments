@@ -28,7 +28,10 @@ def standardize_features(x):
     '''Returns the values of x having zero-mean and unit-variance.'''
     return (x - x.mean()) / (x.std() + 1e-8)
     
-def tmp_dir_name():
+def ts_rand():
     ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
     random_num = random.randint(1e6, 1e7-1)
     return '%s_%d' % (ts, random_num)
+
+def ts():
+    return datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
