@@ -1,13 +1,5 @@
 
-Experiments with Reinforcement Learning algorithms.
-
-You can install the package by typing:
-
-```bash
-git clone https://github.com/asprenger/rl-experiments.git
-cd rl-experiments
-pip install -e .
-```
+TensorFlow implementations of different reinforcement learning algorithms.
 
 List of implemented algorithms:
 
@@ -16,6 +8,13 @@ List of implemented algorithms:
 - [DQN](rlexperiments/dqn)
 - [PPO](rlexperiments/ppo)
 
+The package can be install by typing:
+
+```bash
+git clone https://github.com/asprenger/rl-experiments.git
+cd rl-experiments
+pip install -e .
+```
 
 # Demos
 
