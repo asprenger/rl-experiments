@@ -10,7 +10,7 @@ setup(name='rlexperiments',
                 if package.startswith('rlexperiments')],
       install_requires=[
           'gym[mujoco,atari]',
-          'tensorflow>=1.4.0'
+          'tensorflow>=1.4.1'
       ],
       description='RL-experiments: implementations of reinforcement learning algorithms',
       author='Andre Sprenger',
