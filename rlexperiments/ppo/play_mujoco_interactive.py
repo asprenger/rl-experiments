@@ -35,8 +35,7 @@ def run(env_id, model_path):
     def make_env():
         return real_env
     env = DummyVecEnv([make_env])
-    episode_monitor = EpisodeMonitor(env)
-    vec_normalize = VecNormalize(episode_monitor)
+    vec_normalize = VecNormalize(env)
     env = vec_normalize
 
     ob_space = env.observation_space
@@ -69,10 +68,9 @@ def run(env_id, model_path):
 
             obs, rewards, dones, info = env.step(actions)
             total_reward += rewards
-            print('%d: reward=%f value=%f' % (steps, total_reward, value))
+            print('%d: reward=%f value=%f total_reward=%f' % (steps, rewards[0], value, total_reward))
             
-            if dones:
-                print('ep_reward=%f ep_length=%f' % (episode_monitor.mean_episode_reward(), episode_monitor.mean_episode_length()))
+            if dones[0]:
                 print('DONE')
                 steps = 0
                 total_reward = 0
