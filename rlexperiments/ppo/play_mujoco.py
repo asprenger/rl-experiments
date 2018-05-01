@@ -1,5 +1,4 @@
 import time
-import re
 import os
 import argparse
 from random import randint
@@ -10,6 +9,7 @@ import gym
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 import tensorflow as tf
 from rlexperiments.common.util import ts_rand, ensure_dir
+from rlexperiments.ppo.utils import last_vec_norm_path
 from rlexperiments.ppo.policies import MlpPolicy
 from rlexperiments.vec_env.dummy_vec_env import DummyVecEnv
 from rlexperiments.vec_env.vec_normalize import VecNormalize
@@ -35,7 +35,6 @@ class PygletWindow(pw.Window):
         self.human_done = False
 
 
-
     def imshow(self, arr):
         H, W, C = arr.shape
         assert C==3
@@ -51,21 +50,9 @@ class PygletWindow(pw.Window):
         self.flip()
 
 
-def last_vec_norm_path(model_path):
-    if not os.path.exists(model_path):
-        return None
-    files = os.listdir(model_path)
-    files = [file for file in files if file.startswith('vec_normalize-')]
-    if len(files) == 0:
-        return None
-    epochs = [[i, int(re.search('vec_normalize-(.*).pickle', f).group(1))] for i,f in enumerate(files)]
-    epochs.sort(key=lambda x: -x[1])
-    last_epoch_idx = epochs[0][0]
-    return os.path.join(model_path, files[last_epoch_idx])
-
-
 def ep_video_path(video_path, ts, env_id, epoch):
     return os.path.join(video_path, '%s-%s-%d.mp4' % (ts, env_id, epoch))
+
 
 def run(env_id, model_path, record_video, video_path=None):
 
@@ -73,19 +60,17 @@ def run(env_id, model_path, record_video, video_path=None):
         import roboschool
 
     gym_env = gym.make(env_id)
-
     def make_env():
         return gym_env
-    dummy_venv = DummyVecEnv([make_env])
-    vec_normalize = VecNormalize(dummy_venv)
-    venv = vec_normalize
-
-    ob_space = venv.observation_space
-    ac_space = venv.action_space
+    dummy_vec_env = DummyVecEnv([make_env])
+    vec_normalize = VecNormalize(dummy_vec_env)
+    vec_env = vec_normalize
+    ob_space = vec_env.observation_space
+    ac_space = vec_env.action_space
 
     window = PygletWindow()
 
-    obs = venv.reset()    
+    obs = vec_env.reset()    
 
     ep = 1
     steps = 0
@@ -124,7 +109,7 @@ def run(env_id, model_path, record_video, video_path=None):
 
             value = values[0]
             steps += 1
-            obs, rewards, dones, info = venv.step(actions)
+            obs, rewards, dones, info = vec_env.step(actions)
 
             total_reward += rewards
             print('%d: reward=%f value=%f total_reward=%f' % (steps, rewards[0], value, total_reward))
@@ -140,7 +125,7 @@ def run(env_id, model_path, record_video, video_path=None):
                 if record_video:
                     video_recorder.close()
                     video_recorder = VideoRecorder(gym_env, path=ep_video_path(video_path, ts, env_id, ep), enabled=record_video)
-                obs = venv.reset()
+                obs = vec_env.reset()
                 time.sleep(2)
                 
 

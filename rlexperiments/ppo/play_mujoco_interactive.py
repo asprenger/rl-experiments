@@ -1,5 +1,4 @@
 import time
-import re
 import os
 import argparse
 from random import randint
@@ -7,22 +6,10 @@ import numpy as np
 import gym
 import tensorflow as tf
 from rlexperiments.ppo.policies import MlpPolicy
+from rlexperiments.ppo.utils import last_vec_norm_path
 from rlexperiments.vec_env.dummy_vec_env import DummyVecEnv
 from rlexperiments.vec_env.vec_normalize import VecNormalize
 from rlexperiments.vec_env.episode_monitor import EpisodeMonitor
-
-
-def last_vec_norm_file(model_path):
-    if not os.path.exists(model_path):
-        return None
-    files = os.listdir(model_path)
-    files = [file for file in files if file.startswith('vec_normalize-')]
-    if len(files) == 0:
-        return None
-    epochs = [[i, int(re.search('vec_normalize-(.*).pickle', f).group(1))] for i,f in enumerate(files)]
-    epochs.sort(key=lambda x: -x[1])
-    last_epoch_idx = epochs[0][0]
-    return os.path.join(model_path, files[last_epoch_idx])
 
 
 def run(env_id, model_path):
@@ -30,19 +17,18 @@ def run(env_id, model_path):
     if env_id.startswith('Roboschool'):
         import roboschool
 
-    real_env = gym.make(env_id)
-
+    gym_env = gym.make(env_id)
     def make_env():
-        return real_env
-    env = DummyVecEnv([make_env])
-    vec_normalize = VecNormalize(env)
-    env = vec_normalize
+        return gym_env
+    dummy_vec_env = DummyVecEnv([make_env])
+    vec_normalize = VecNormalize(dummy_vec_env)
+    vec_env = vec_normalize
+    ob_space = vec_env.observation_space
+    ac_space = vec_env.action_space
 
-    ob_space = env.observation_space
-    ac_space = env.action_space
+    obs = vec_env.reset()    
 
-    obs = env.reset()    
-
+    ep = 1
     steps = 0
     total_reward = 0
 
@@ -55,26 +41,27 @@ def run(env_id, model_path):
         ckpt = tf.train.get_checkpoint_state(model_path)
         saver.restore(sess, ckpt.model_checkpoint_path)
 
-        vec_norm_state = last_vec_norm_file(model_path)
+        vec_norm_state = last_vec_norm_path(model_path)
         print('Loading VecNormalize state %s' % vec_norm_state)
         vec_normalize.restore(vec_norm_state)
 
         while True:
-            real_env.render()
+            gym_env.render()
             actions, values, _ = policy.step(obs)
 
             value = values[0]
             steps += 1
 
-            obs, rewards, dones, info = env.step(actions)
+            obs, rewards, dones, info = vec_env.step(actions)
             total_reward += rewards
             print('%d: reward=%f value=%f total_reward=%f' % (steps, rewards[0], value, total_reward))
             
             if dones[0]:
-                print('DONE')
+                print('Episode %d finished' % ep)
+                ep += 1
                 steps = 0
                 total_reward = 0
-                obs = env.reset()
+                obs = vec_env.reset()
                 time.sleep(2)
 
 def main():
