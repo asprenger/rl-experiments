@@ -42,7 +42,6 @@ def run(env_id, model_path):
         saver.restore(sess, ckpt.model_checkpoint_path)
 
         while True:
-            time.sleep(0.05)
             env.render()
             actions, values, _ = policy.step(obs)
             value = values[0]
