@@ -12,16 +12,9 @@ class CnnPolicy(object):
             self.scope = tf.get_variable_scope().name
 
     def _init(self, sess, ob_space, ac_space, nbatch): 
-        nh, nw, nc = ob_space.shape
-        ob_shape = (nbatch, nh, nw, 4)
         nact = ac_space.n
-
-        sample_dtype = tf.int32
-        sample_shape = []
-        def sample_placeholder(prepend_shape, name=None):
-            return tf.placeholder(dtype=sample_dtype, shape=prepend_shape+sample_shape, name=name)
-
-        X = tf.placeholder(tf.uint8, ob_shape, name='X') 
+        num_batch = None
+        X = tf.placeholder(shape=[num_batch, 84, 84, 4], dtype=tf.int8, name="X")
 
         X_scaled = tf.cast(X, tf.float32) / 255.0
 
@@ -115,6 +108,7 @@ class CnnPolicy(object):
             return a, v
 
         self.step = step    
+
 
     def get_variables(self):
         return tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, self.scope)

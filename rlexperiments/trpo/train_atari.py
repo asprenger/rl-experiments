@@ -9,6 +9,7 @@ from rlexperiments.vec_env.subproc_vec_env import SubprocVecEnv
 from rlexperiments.vec_env.vec_frame_stack import VecFrameStack
 from rlexperiments.vec_env.episode_monitor import EpisodeMonitor
 from rlexperiments.trpo.policies import CnnPolicy
+from rlexperiments.trpo import trpo
 
 
 def make_atari_env(env_id, num_env, seed, output_dir, record_video, record_video_freq = 100):
@@ -30,29 +31,12 @@ def make_atari_env(env_id, num_env, seed, output_dir, record_video, record_video
 
 
 def train(env_id, num_envs, num_timesteps, seed, cuda_visible_devices, gpu_memory_fraction, output_dir, video):
-
     env = make_atari_env(env_id, num_envs, seed, output_dir=output_dir, record_video=video)
     env = VecFrameStack(env, 4)
-
+    policy = CnnPolicy
     sess = create_session(cuda_visible_devices, gpu_memory_fraction)
-
-    nsteps = 1
-
-    nenvs = env.num_envs
-    ob_space = env.observation_space
-    ac_space = env.action_space
-    nbatch = nenvs * nsteps
-    name = 'foo'
-
-    policy = CnnPolicy(name, sess, ob_space, ac_space, nbatch)
-    sess.run(tf.global_variables_initializer())
-
-    obs = env.reset()
-    a, v = policy.step(obs)
-
-    print(a)
-    print(v) # TODO why are all values the same????
-
+    trpo.learn(env, policy, sess, timesteps_per_batch=512, max_kl=0.001, cg_iters=10, cg_damping=1e-3,
+        max_timesteps=int(num_timesteps * 1.1), gamma=0.98, lam=1.0, vf_iters=3, vf_stepsize=1e-4, entcoeff=0.00)
 
 def main():
     parser = argparse.ArgumentParser()
